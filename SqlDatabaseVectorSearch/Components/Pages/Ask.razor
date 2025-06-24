@@ -2,6 +2,9 @@
 
 @inject IServiceProvider ServiceProvider
 @inject IJSRuntime JSRuntime
+@inject ChatHistoryService ChatHistoryService
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.WebUtilities
 
 <PageTitle>Chat with your data</PageTitle>
 
@@ -99,6 +102,9 @@
                 <Button Type="ButtonType.Reset" @ref="resetButton" Class="ms-2" Color="ButtonColor.Secondary" Disabled="@isAsking" @onclick="Reset">
                     <Icon CustomIconName="bi bi-x-lg" />
                 </Button>
+                <Button Type="ButtonType.Button" Class="ms-2" Color="ButtonColor.Info" Disabled="@isAsking" @onclick="NewChat">
+                    <Icon Name="IconName.Plus" /> New Chat
+                </Button>
             </div>
         </div>
     </div>
@@ -120,14 +126,88 @@
     private bool showCopyConfirmation = false;
     private string toolTipText = "Copy to Clipboard";
 
+    private const string ChatHistoryKey = "chat-history";
+    private const string ConversationIdKey = "chat-conversation-id";
+    private const string ChatHistoryKeyPrefix = "chat-history-";
+
+    private Guid? ChatId;
+    private bool _initialized = false;
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        await LoadChatFromQueryAsync();
+        StateHasChanged();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
+        if (firstRender && !_initialized)
         {
-            return;
+            await LoadChatFromQueryAsync();
+            await JSRuntime.InvokeVoidAsync("setFocus", askInput);
+            _initialized = true;
+            StateHasChanged();
         }
+    }
 
-        await JSRuntime.InvokeVoidAsync("setFocus", askInput);
+    private async Task LoadChatFromQueryAsync()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("cid", out var cidString) &&
+            Guid.TryParse(cidString, out var cid))
+        {
+            ChatId = cid;
+            conversationId = cid;
+            var storedMessages = await JSRuntime.InvokeAsync<string>("localStorage.getItem", ChatHistoryKeyPrefix + conversationId);
+            if (!string.IsNullOrWhiteSpace(storedMessages))
+            {
+                try
+                {
+                    messages = System.Text.Json.JsonSerializer.Deserialize<List<Message>>(storedMessages) ?? [];
+                }
+                catch { messages = []; }
+            }
+            else
+            {
+                messages = [];
+            }
+        }
+        else
+        {
+            // Load latest chat or start new
+            var sessions = await ChatHistoryService.GetSessionsAsync();
+            if (sessions.Count > 0)
+            {
+                conversationId = sessions[0].ConversationId;
+                var storedMessages = await JSRuntime.InvokeAsync<string>("localStorage.getItem", ChatHistoryKeyPrefix + conversationId);
+                if (!string.IsNullOrWhiteSpace(storedMessages))
+                {
+                    try
+                    {
+                        messages = System.Text.Json.JsonSerializer.Deserialize<List<Message>>(storedMessages) ?? [];
+                    }
+                    catch { messages = []; }
+                }
+                else
+                {
+                    messages = [];
+                }
+            }
+            else
+            {
+                messages = [];
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
@@ -200,16 +280,47 @@
         finally
         {
             await EnsureMessageIsVisibleAsync();
-
+            await SaveChatHistoryAsync();
             isAsking = false;
         }
     }
 
-    private void Reset()
+    private async Task SaveChatHistoryAsync()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(messages);
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", ChatHistoryKeyPrefix + conversationId, json);
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", ConversationIdKey, conversationId.ToString());
+        // Add/update session
+        var session = new ChatSession
+        {
+            ConversationId = conversationId,
+            Title = $"Chat {DateTime.Now:yyyy-MM-dd HH:mm}",
+            Created = DateTime.Now
+        };
+        await ChatHistoryService.AddOrUpdateSessionAsync(session);
+    }
+
+    private async Task Reset()
     {
         question = null;
         conversationId = Guid.NewGuid();
         messages.Clear();
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", ChatHistoryKeyPrefix + conversationId);
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", ConversationIdKey, conversationId.ToString());
+        StateHasChanged();
+    }
+
+    private async Task NewChat()
+    {
+        await Reset();
+        var session = new ChatSession
+        {
+            ConversationId = conversationId,
+            Title = $"Chat {DateTime.Now:yyyy-MM-dd HH:mm}",
+            Created = DateTime.Now
+        };
+        await ChatHistoryService.AddOrUpdateSessionAsync(session);
+        NavigationManager.NavigateTo($"/ask?cid={conversationId}", forceLoad: true);
     }
 
     private async Task CopyToClipboardAsync(string text)

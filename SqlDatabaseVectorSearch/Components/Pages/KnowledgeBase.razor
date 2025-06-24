@@ -1,0 +1,88 @@
+@page "/knowledgebase"
+@using Microsoft.Xrm.Sdk
+@using Microsoft.Xrm.Sdk.Client
+@inject D365KnowledgeBaseService KnowledgeBaseService
+@inject DocumentService DocumentService
+@inject NavigationManager NavigationManager
+@inject IServiceProvider ServiceProvider
+
+<PageTitle>Knowledge Base Articles</PageTitle>
+
+<h3>Knowledge Base Articles</h3>
+
+<input @bind="searchTerm" placeholder="Search articles..." class="form-control mb-3" />
+<Button Color="ButtonColor.Primary" @onclick="LoadArticles">Search</Button>
+
+@if (isLoading)
+{
+    <div class="text-center"><Spinner Type="SpinnerType.Dots" Color="SpinnerColor.Primary" /></div>
+}
+else if (articles.Count == 0)
+{
+    <div>No articles found.</div>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var article in articles)
+            {
+                var title = article.GetAttributeValue<string>("title");
+                var status = article.GetAttributeValue<OptionSetValue>("statuscode")?.Value;
+                <tr>
+                    <td>@title</td>
+                    <td>@status</td>
+                    <td>
+                        <Button Color="ButtonColor.Success" @onclick="() => ImportArticle(article)">Import as Document</Button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string searchTerm = string.Empty;
+    private bool isLoading = false;
+    private List<Microsoft.Xrm.Sdk.Entity> articles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadArticles();
+    }
+
+    private async Task LoadArticles()
+    {
+        isLoading = true;
+        StateHasChanged();
+        articles = KnowledgeBaseService.GetKnowledgeArticles(searchTerm);
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ImportArticle(Microsoft.Xrm.Sdk.Entity article)
+    {
+        var title = article.GetAttributeValue<string>("title") ?? "Untitled";
+        var content = article.GetAttributeValue<string>("content") ?? string.Empty;
+        // Parse HTML content to plain text (or chunk as needed)
+        var plainText = HtmlToPlainText(content);
+        // Create Document and DocumentChunks
+        await using var scope = ServiceProvider.CreateAsyncScope();
+        var documentService = scope.ServiceProvider.GetRequiredService<DocumentService>();
+        await documentService.CreateFromHtmlAsync(title, plainText);
+        NavigationManager.NavigateTo("/documents", true);
+    }
+
+    private string HtmlToPlainText(string html)
+    {
+        // Simple HTML to text conversion (can be improved)
+        return System.Text.RegularExpressions.Regex.Replace(html, "<.*?>", string.Empty);
+    }
+}

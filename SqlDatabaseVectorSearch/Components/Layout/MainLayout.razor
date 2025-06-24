@@ -1,4 +1,5 @@
-﻿@inherits LayoutComponentBase
+﻿@using SqlDatabaseVectorSearch.Components.Shared
+@inherits LayoutComponentBase
 
 <Toasts class="p-3" AutoHide="true" Placement="ToastsPlacement.TopRight" />
 
@@ -18,6 +19,10 @@
                   Title="SQL Vector Search"
                   DataProvider="Sidebar2DataProvider"
                   WidthUnit="Unit.Px" />
+        <div class="p-3">
+            <h6>Chat History</h6>
+            <ChatHistoryNav />
+        </div>
     </SidebarSection>
 
     <ContentSection>
@@ -45,7 +50,8 @@
         navItems = [
             new() { Id = "1", Href = "/", IconName = IconName.HouseDoorFill, Text = "Home", Match = NavLinkMatch.All},
             new() { Id = "2", Href= "/documents", IconName = IconName.FileText, Text = "Documents" },
-            new() { Id = "3", Href = "/ask", IconName = IconName.ChatDots, Text = "Ask"}
+            new() { Id = "3", Href = "/ask", IconName = IconName.ChatDots, Text = "Ask"},
+            new() { Id = "4", Href = "/knowledgebase", IconName = IconName.Book, Text = "Knowledge Base"}
         ];
 
         return navItems;

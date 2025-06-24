@@ -1,0 +1,50 @@
+@inject ChatHistoryService ChatHistoryService
+@inject NavigationManager NavigationManager
+
+@if (sessions is not null && sessions.Count > 0)
+{
+    <ul class="list-group chat-history-list">
+        @foreach (var session in sessions)
+        {
+            <li class="list-group-item list-group-item-action"
+                style="cursor:pointer;"
+                @onclick="() => LoadChat(session.ConversationId)">
+                <span class="chat-history-title">@session.Title</span>
+                <span class="chat-history-time text-muted small ms-1">@session.Created.ToShortTimeString()</span>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <div class="text-muted small ps-2">No chat history yet.</div>
+}
+
+@code {
+    private List<ChatSession>? sessions;
+    private bool _initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            sessions = await ChatHistoryService.GetSessionsAsync();
+            _initialized = true;
+            StateHasChanged();
+        }
+        else
+        {
+            var newSessions = await ChatHistoryService.GetSessionsAsync();
+            if (sessions == null || newSessions.Count != sessions.Count)
+            {
+                sessions = newSessions;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void LoadChat(Guid conversationId)
+    {
+        NavigationManager.NavigateTo($"/ask?cid={conversationId}");
+    }
+}

@@ -2,6 +2,7 @@ using System.Net.Mime;
 using System.Text.Json.Serialization;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.SemanticKernel;
 using SqlDatabaseVectorSearch.Components;
 using SqlDatabaseVectorSearch.ContentDecoders;
@@ -21,10 +22,15 @@ builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, relo
 // Add services to the container.
 var aiSettings = builder.Services.ConfigureAndGet<AzureOpenAISettings>(builder.Configuration, "AzureOpenAI")!;
 var appSettings = builder.Services.ConfigureAndGet<AppSettings>(builder.Configuration, nameof(AppSettings))!;
+var d365Settings = builder.Services.ConfigureAndGet<D365Settings>(builder.Configuration, "D365")!;
 
-// Add services to the container.
 var ApiKey = builder.Configuration["AzureOpenAI:ChatCompletion:ApiKey"]!;
 
+builder.Services.AddScoped<ServiceClient>(_ =>
+{
+    var connectionString = $"AuthType=ClientSecret;Url={d365Settings.Url};ClientId={d365Settings.ClientId};ClientSecret={d365Settings.ClientSecret};TenantId={d365Settings.TenantId};RequireNewInstance=true;";
+    return new ServiceClient(connectionString);
+});
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -74,6 +80,8 @@ builder.Services.AddSingleton<ChatService>();
 
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<VectorSearchService>();
+builder.Services.AddScoped<D365KnowledgeBaseService>();
+builder.Services.AddScoped<ChatHistoryService>();
 
 builder.Services.AddKeyedSingleton<IContentDecoder, PdfContentDecoder>(MediaTypeNames.Application.Pdf);
 builder.Services.AddKeyedSingleton<IContentDecoder, DocxContentDecoder>("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
@@ -82,6 +90,7 @@ builder.Services.AddKeyedSingleton<IContentDecoder, TextContentDecoder>(MediaTyp
 
 builder.Services.AddKeyedSingleton<ITextChunker, DefaultTextChunker>(KeyedService.AnyKey);
 builder.Services.AddKeyedSingleton<ITextChunker, MarkdownTextChunker>(MediaTypeNames.Text.Markdown);
+builder.Services.AddKeyedSingleton<ITextChunker, HtmlTextChunker>("text/html");
 
 builder.Services.AddOpenApi(options =>
 {

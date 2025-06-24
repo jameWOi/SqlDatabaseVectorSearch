@@ -1,11 +1,13 @@
 ﻿using System.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using SqlDatabaseVectorSearch.DataAccessLayer;
 using SqlDatabaseVectorSearch.Models;
+using SqlDatabaseVectorSearch.TextChunkers;
 
 namespace SqlDatabaseVectorSearch.Services;
 
-public class DocumentService(ApplicationDbContext dbContext)
+public class DocumentService(ApplicationDbContext dbContext, IServiceProvider serviceProvider, IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator)
 {
     public async Task<IEnumerable<Document>> GetAsync(CancellationToken cancellationToken = default)
     {
@@ -39,4 +41,38 @@ public class DocumentService(ApplicationDbContext dbContext)
 
     public Task DeleteAsync(IEnumerable<Guid> documentIds, CancellationToken cancellationToken = default)
         => dbContext.Documents.Where(d => documentIds.Contains(d.Id)).ExecuteDeleteAsync(cancellationToken);
+
+    public async Task CreateFromHtmlAsync(string title, string plainText, CancellationToken cancellationToken = default)
+    {
+        var document = new DataAccessLayer.Entities.Document
+        {
+            Id = Guid.NewGuid(),
+            Name = title,
+            CreationDate = DateTimeOffset.UtcNow,
+            Chunks = []
+        };
+
+        // Use the HTML chunker for splitting
+        var chunker = serviceProvider.GetRequiredKeyedService<ITextChunker>("text/html");
+        var paragraphs = chunker.Split(plainText);
+
+        // Generate embeddings for all paragraphs
+        var embeddings = await embeddingGenerator.GenerateAndZipAsync(paragraphs, cancellationToken: cancellationToken);
+
+        int index = 0;
+        foreach (var (content, embedding) in embeddings)
+        {
+            document.Chunks.Add(new DataAccessLayer.Entities.DocumentChunk
+            {
+                Id = Guid.NewGuid(),
+                DocumentId = document.Id,
+                Index = index++,
+                Content = content.Trim(),
+                Embedding = embedding.Vector.ToArray()
+            });
+        }
+
+        dbContext.Documents.Add(document);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 }
