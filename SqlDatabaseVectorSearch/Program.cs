@@ -14,11 +14,17 @@ using TinyHelpers.AspNetCore.Extensions;
 using TinyHelpers.AspNetCore.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true);
+
+builder.AddServiceDefaults();
+builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true).AddUserSecrets<Program>();
 
 // Add services to the container.
 var aiSettings = builder.Services.ConfigureAndGet<AzureOpenAISettings>(builder.Configuration, "AzureOpenAI")!;
 var appSettings = builder.Services.ConfigureAndGet<AppSettings>(builder.Configuration, nameof(AppSettings))!;
+
+// Add services to the container.
+var ApiKey = builder.Configuration["AzureOpenAI:ChatCompletion:ApiKey"]!;
+
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -60,8 +66,8 @@ builder.Services.ConfigureHttpClientDefaults(configure =>
 // Semantic Kernel is used to generate embeddings and to reformulate questions taking into account all the previous interactions,
 // so that embeddings themselves can be generated more accurately.
 builder.Services.AddKernel()
-    .AddAzureOpenAIEmbeddingGenerator(aiSettings.Embedding.Deployment, aiSettings.Embedding.Endpoint, aiSettings.Embedding.ApiKey, modelId: aiSettings.Embedding.ModelId, dimensions: aiSettings.Embedding.Dimensions)
-    .AddAzureOpenAIChatCompletion(aiSettings.ChatCompletion.Deployment, aiSettings.ChatCompletion.Endpoint, aiSettings.ChatCompletion.ApiKey, modelId: aiSettings.ChatCompletion.ModelId);
+    .AddAzureOpenAIEmbeddingGenerator(aiSettings.Embedding.Deployment, aiSettings.Embedding.Endpoint, ApiKey, modelId: aiSettings.Embedding.ModelId, dimensions: aiSettings.Embedding.Dimensions)
+    .AddAzureOpenAIChatCompletion(aiSettings.ChatCompletion.Deployment, aiSettings.ChatCompletion.Endpoint, ApiKey, modelId: aiSettings.ChatCompletion.ModelId);
 
 builder.Services.AddSingleton<TokenizerService>();
 builder.Services.AddSingleton<ChatService>();
@@ -90,6 +96,8 @@ builder.Services.AddDefaultProblemDetails();
 builder.Services.AddDefaultExceptionHandler();
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 await ConfigureDatabaseAsync(app.Services);
 
 // Configure the HTTP request pipeline.
