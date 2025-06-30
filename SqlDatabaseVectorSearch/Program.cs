@@ -26,11 +26,6 @@ var d365Settings = builder.Services.ConfigureAndGet<D365Settings>(builder.Config
 
 var ApiKey = builder.Configuration["AzureOpenAI:ChatCompletion:ApiKey"]!;
 
-builder.Services.AddScoped<ServiceClient>(_ =>
-{
-    var connectionString = $"AuthType=ClientSecret;Url={d365Settings.Url};ClientId={d365Settings.ClientId};ClientSecret={d365Settings.ClientSecret};TenantId={d365Settings.TenantId};RequireNewInstance=true;";
-    return new ServiceClient(connectionString);
-});
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
