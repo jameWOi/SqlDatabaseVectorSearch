@@ -24,6 +24,7 @@ public class ChatService(IChatCompletionService chatCompletionService, Tokenizer
             {question}
             ---
             The reformulation must always explicitly contain the subject of the question.
+   
             You must reformulate the question in the same language of the user's question. For example, it the user asks a question in English, the answer must be in English.
             Never add "in this chat", "in the context of this chat", "in the context of our conversation", "search for" or something like that in your answer.
             """;
@@ -129,7 +130,11 @@ public class ChatService(IChatCompletionService chatCompletionService, Tokenizer
             Answer the following question:
             ---
             {question}
-            =====          
+            =====
+            return the Categories for the request based on the uploaded XLSX CRSM Cats file at the end of your reponse in the following format
+            Departmental paper maintenance:
+            Update paper or qualification webpages (ID: 197CB17D-4DAB-EE11-BE37-000D3AE1A20C)
+            ===
             Using the following information:
 
             """);
