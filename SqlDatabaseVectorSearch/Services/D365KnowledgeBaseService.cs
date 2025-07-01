@@ -17,9 +17,11 @@ public class D365KnowledgeBaseService
     {
         var query = new QueryExpression("knowledgearticle")
         {
-            ColumnSet = new ColumnSet("knowledgearticleid", "title", "content", "statuscode"),
+            ColumnSet = new ColumnSet("knowledgearticleid", "articlepublicnumber", "title", "content", "statuscode"),
             TopCount = maxResults
         };
+        // Filter for statecode = 3
+        query.Criteria.AddCondition("statecode", ConditionOperator.Equal, 3);
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             query.Criteria.AddCondition("title", ConditionOperator.Like, $"%{searchTerm}%");

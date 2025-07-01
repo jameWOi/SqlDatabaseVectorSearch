@@ -42,7 +42,7 @@ public class DocumentService(ApplicationDbContext dbContext, IServiceProvider se
     public Task DeleteAsync(IEnumerable<Guid> documentIds, CancellationToken cancellationToken = default)
         => dbContext.Documents.Where(d => documentIds.Contains(d.Id)).ExecuteDeleteAsync(cancellationToken);
 
-    public async Task CreateFromHtmlAsync(string title, string plainText, CancellationToken cancellationToken = default)
+    public async Task CreateFromHtmlAsync(string title, string plainText, string articleNumber , CancellationToken cancellationToken = default)
     {
         var document = new DataAccessLayer.Entities.Document
         {
@@ -68,7 +68,10 @@ public class DocumentService(ApplicationDbContext dbContext, IServiceProvider se
                 DocumentId = document.Id,
                 Index = index++,
                 Content = content.Trim(),
-                Embedding = embedding.Vector.ToArray()
+                Embedding = embedding.Vector.ToArray(),
+                ArticleNumber = articleNumber,
+                ArticleUrl = "https://ask.otago.ac.nz/knowledgebase/article/"+ articleNumber
+
             });
         }
 

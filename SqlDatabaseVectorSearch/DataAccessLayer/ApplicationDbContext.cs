@@ -10,6 +10,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public virtual DbSet<DocumentChunk> DocumentChunks { get; set; }
 
+   // public DbSet<Category> CategoryRows { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);

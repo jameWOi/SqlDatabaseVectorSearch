@@ -127,12 +127,13 @@ public class ChatService(IChatCompletionService chatCompletionService, Tokenizer
             """);
 
         var prompt = new StringBuilder($"""
-            Answer the following question:
+            Answer the user's question using the provided document chunks.
+            If you use information from a document, include its URL as a reference at the end of your answer.
             ---
             {question}
             =====
             return the Categories for the request based on the uploaded XLSX CRSM Cats file at the end of your reponse in the following format
-            Departmental paper maintenance:
+            Category Level2:
             Update paper or qualification webpages (ID: 197CB17D-4DAB-EE11-BE37-000D3AE1A20C)
             ===
             Using the following information:

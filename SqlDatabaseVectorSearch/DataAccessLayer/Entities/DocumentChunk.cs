@@ -13,4 +13,6 @@ public class DocumentChunk
     public required float[] Embedding { get; set; }
 
     public virtual Document Document { get; set; } = null!;
+    public string? ArticleNumber { get; set; }
+    public string? ArticleUrl { get; set; }
 }

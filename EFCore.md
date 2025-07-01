@@ -1,0 +1,1 @@
+dotnet ef migrations add InitialCreate --project SqlDatabaseVectorSearch --startup-project SqlDatabaseVectorSearch
