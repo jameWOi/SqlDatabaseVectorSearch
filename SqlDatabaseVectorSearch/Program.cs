@@ -64,8 +64,9 @@ builder.Services.ConfigureHttpClientDefaults(configure =>
 {
     configure.AddStandardResilienceHandler(options =>
     {
-        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(15);
-        options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(2);
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(60);
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(120);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(5);
     });
 });
 

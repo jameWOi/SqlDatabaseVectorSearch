@@ -8,7 +8,7 @@ using SqlDatabaseVectorSearch.DataAccessLayer;
 
 #nullable disable
 
-namespace SqlDatabaseVectorSearch.DataAccessLayer.Migrations
+namespace SqlDatabaseVectorSearch.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -65,6 +65,12 @@ namespace SqlDatabaseVectorSearch.DataAccessLayer.Migrations
                         .HasColumnType("vector(1536)");
 
                     b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IndexOnPage")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PageNumber")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

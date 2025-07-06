@@ -9,11 +9,11 @@ using SqlDatabaseVectorSearch.DataAccessLayer;
 
 #nullable disable
 
-namespace SqlDatabaseVectorSearch.DataAccessLayer.Migrations
+namespace SqlDatabaseVectorSearch.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250701065529_KB")]
-    partial class KB
+    [Migration("20250704063502_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -68,6 +68,12 @@ namespace SqlDatabaseVectorSearch.DataAccessLayer.Migrations
                         .HasColumnType("vector(1536)");
 
                     b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IndexOnPage")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PageNumber")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

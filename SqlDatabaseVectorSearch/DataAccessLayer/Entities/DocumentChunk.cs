@@ -7,6 +7,9 @@ public class DocumentChunk
     public Guid DocumentId { get; set; }
 
     public int Index { get; set; }
+    public int? PageNumber { get; set; }
+
+    public int IndexOnPage { get; set; }
 
     public required string Content { get; set; }
 
