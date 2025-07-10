@@ -9,10 +9,16 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var password = builder.AddParameter("password", "Password123", secret: true);
 
+//var sql = builder.AddSqlServer("sql", password)
+//    .WithLifetime(ContainerLifetime.Persistent)
+//    .WithDockerfile(@".\", "sql2025.docker")
+//    .WithHostPort(14333);
+
 var sql = builder.AddSqlServer("sql", password)
     .WithLifetime(ContainerLifetime.Persistent)
-    .WithDockerfile(@".\", "sql2025.docker")
-    .WithHostPort(14333);
+    .WithImageTag("2025-latest")
+    .WithHostPort(14333)
+    .WithEnvironment("ACCEPT_EULA", "Y");
 
 var db = sql
     .WithDataVolume()
